@@ -1,20 +1,27 @@
 "use client";
 import { useState } from 'react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    router.push("/dashboard");
     try {
       const response = await axios.post('/api/auth/login', { email, password });
+      if (response.status===200) {
+
+      }
       console.log('Login Successful:', response.data);
     } catch (err) {
       console.error('Login Failed:', err.response.data);
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit}>
