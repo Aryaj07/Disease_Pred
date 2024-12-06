@@ -1,79 +1,75 @@
 "use client";
-import { useState } from 'react';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function GetStarted() {
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    router.push("/dashboard");
-    try {
-      const response = await axios.post('/api/auth/login', { email, password });
-      if (response.status === 200) {
-        // Handle login
-      }
-      console.log('Login Successful:', response.data);
-    } catch (err) {
-      console.error('Login Failed:', err.response.data);
-    }
+  const handleClick = () => {
+    router.push('/login');
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-blue-200 relative overflow-hidden">
-      {/* Animated Background Circles */}
-      <div className="absolute w-72 h-72 bg-blue-300 rounded-full blur-3xl opacity-50 top-10 left-10 animate-pulse"></div>
-      <div className="absolute w-96 h-96 bg-blue-400 rounded-full blur-2xl opacity-40 bottom-10 right-10 animate-bounce"></div>
-      
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm transform transition-all duration-500 ease-in-out hover:shadow-2xl relative z-10"
-        style={{ animation: "fadeIn 1.5s" }}
-      >
-        <h2 className="text-2xl font-semibold text-gray-700 mb-6 text-center">
-          Login to Your Account
-        </h2>
-        <div className="mb-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 text-gray-800 bg-gray-100 border border-gray-300 rounded focus:outline-none focus:ring-4 focus:ring-blue-400 focus:scale-105 transition-transform duration-300 shadow-sm"
-          />
-        </div>
-        <div className="mb-6">
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 text-gray-800 bg-gray-100 border border-gray-300 rounded focus:outline-none focus:ring-4 focus:ring-blue-400 focus:scale-105 transition-transform duration-300 shadow-sm"
-          />
-        </div>
-        <div className="flex justify-between">
-          <button
-            type="submit"
-            className="w-[48%] py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/signup')}
-            className="w-[48%] py-2 text-white bg-gray-500 rounded hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-          >
-            Sign Up
-          </button>
-        </div>
-        {/* Subtle text animation for "Forgot Password" */}
-        <p className="mt-4 text-sm text-gray-500 text-center hover:text-blue-600 transition-colors duration-300 cursor-pointer animate-fade-in">
-          Forgot Password?
+    <div className="relative h-screen w-full bg-gradient-to-br from-orange-100 to-yellow-200 overflow-hidden flex items-center justify-center">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src="https://source.unsplash.com/1600x900/?sunrise,people"
+          alt="Warm Welcome Background"
+          className="w-full h-full object-cover opacity-70"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="relative text-center z-10 bg-white/60 backdrop-blur-md p-10 rounded-lg shadow-lg">
+        <h1 className="text-4xl font-extrabold text-gray-800 mb-4 animate-fade-in-down">
+          Welcome to Your New Journey!
+        </h1>
+        <p className="text-lg text-gray-600 mb-8 animate-fade-in-up">
+          Start your adventure with us today.
         </p>
-      </form>
+        <button
+          onClick={handleClick}
+          className="px-8 py-4 bg-orange-500 text-white text-xl font-semibold rounded-lg shadow-lg hover:bg-orange-600 hover:scale-110 transition-transform duration-300 focus:outline-none focus:ring-4 focus:ring-orange-300"
+        >
+          Get Started
+        </button>
+      </div>
+
+      {/* Footer Decoration */}
+      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-yellow-200 to-transparent"></div>
+
+      {/* Additional Styles */}
+      <style jsx>{`
+        @keyframes fade-in-down {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-down {
+          animation: fade-in-down 1.5s ease-out;
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 1.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
