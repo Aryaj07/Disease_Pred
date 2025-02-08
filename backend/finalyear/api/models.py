@@ -46,3 +46,12 @@ class User(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         return self.is_superuser
+    
+class Doctor(models.Model):
+    name = models.CharField(max_length=255)
+    address = models.TextField()
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    def __str__(self):
+        return self.name
