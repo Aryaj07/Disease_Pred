@@ -1,33 +1,49 @@
 "use client";
-import { useState } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
-    router.push("/dashboard");
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
-      if (response.status === 200) {
-        // Handle login
-      }
-      console.log('Login Successful:', response.data);
+        const response = await fetch('http://127.0.0.1:8000//api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (response.status === 200) {
+            console.log("Login Successful:", data);
+            router.push("/dashboard");
+        } else {
+            console.error("Login Failed:", data.error);
+            alert(data.error);
+        }
     } catch (err) {
-      console.error('Login Failed:', err.response.data);
+        console.error("Login Failed:", err);
     }
-  };
-
+};
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-blue-200 relative overflow-hidden">
+    <div
+      className="flex items-center justify-center h-screen relative overflow-hidden bg-cover bg-center"
+      style={{
+        backgroundImage: "url('https://wallpaperaccess.com/full/2314950.jpg')",
+      }}
+    >
+      {/* Overlay for better contrast */}
+      <div className="absolute inset-0 bg-black opacity-50"></div>
+
       {/* Animated Background Circles */}
       <div className="absolute w-72 h-72 bg-blue-300 rounded-full blur-3xl opacity-50 top-10 left-10 animate-pulse"></div>
       <div className="absolute w-96 h-96 bg-blue-400 rounded-full blur-2xl opacity-40 bottom-10 right-10 animate-bounce"></div>
-      
+
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm transform transition-all duration-500 ease-in-out hover:shadow-2xl relative z-10"
@@ -63,7 +79,7 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/signup')}
+            onClick={() => router.push("/signup")}
             className="w-[48%] py-2 text-white bg-gray-500 rounded hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
           >
             Sign Up

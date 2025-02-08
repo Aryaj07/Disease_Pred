@@ -11,13 +11,7 @@ export default function GetStarted() {
   return (
     <div className="relative h-screen w-full bg-gradient-to-br from-orange-100 to-yellow-200 overflow-hidden flex items-center justify-center">
       {/* Background Image */}
-      <div className="absolute inset-0">
-        <img
-          src="https://source.unsplash.com/1600x900/?sunrise,people"
-          alt="Warm Welcome Background"
-          className="w-full h-full object-cover opacity-70"
-        />
-      </div>
+      <div className="absolute inset-0 bg-[url('https://wallpaperaccess.com/full/624111.jpg')] bg-cover bg-center opacity-70"></div>
 
       {/* Content */}
       <div className="relative text-center z-10 bg-white/60 backdrop-blur-md p-10 rounded-lg shadow-lg">
