@@ -13,12 +13,74 @@ from django.core.files.storage import default_storage
 import fitz  # PyMuPDF
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
+import requests
+import urllib.parse
+
+def find_nearest_hospital(latitude, longitude, radius=5000):
+    """Fetches the nearest hospital and generates a Google Maps link."""
+    
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    overpass_query = f"""
+    [out:json];
+    (node["amenity"="hospital"](around:{radius},{latitude},{longitude});
+    node["amenity"="clinic"](around:{radius},{latitude},{longitude});
+    way["amenity"="hospital"](around:{radius},{latitude},{longitude});
+    way["amenity"="clinic"](around:{radius},{latitude},{longitude});
+    relation["amenity"="hospital"](around:{radius},{latitude},{longitude});
+    relation["amenity"="clinic"](around:{radius},{latitude},{longitude});
+    );
+    out center;
+    """
+    
+    response = requests.get(overpass_url, params={'data': overpass_query})
+    
+    if response.status_code != 200:
+        return {"error": "Failed to fetch data from OpenStreetMap API."}
+
+    data = response.json()
+    
+    if 'elements' not in data or not data['elements']:
+        return {"message": "No hospitals or clinics found within the radius."}
+
+    nearest = None
+    min_distance = float('inf')
+    
+    for element in data['elements']:
+        if 'lat' in element and 'lon' in element:
+            facility_location = (element['lat'], element['lon'])
+            distance = geodesic((latitude, longitude), facility_location).meters
+            if distance < min_distance:
+                min_distance = distance
+                nearest = element
+
+    if nearest:
+        name = nearest.get('tags', {}).get('name', 'Unknown Medical Facility')
+        hospital_lat = nearest['lat']
+        hospital_lon = nearest['lon']
+        
+        # Encode the hospital name for URL formatting
+        encoded_name = urllib.parse.quote(name)
+
+        # Google Maps link with hospital name
+        google_maps_link = f"https://www.google.com/maps/search/?api=1&query={encoded_name}+{hospital_lat},{hospital_lon}"
+        
+        return {
+            "name": name,
+            "latitude": hospital_lat,
+            "longitude": hospital_lon,
+            "distance_meters": round(min_distance, 2),
+            "google_maps_link": google_maps_link
+        }
+    else:
+        return {"message": "No hospitals or clinics found."}
+    
 
 @csrf_exempt
 def signup_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         first_name = data.get('first_name')
+        print(first_name)
         last_name = data.get('last_name')
         email = data.get('email')
         password = data.get('password')
@@ -31,11 +93,12 @@ def signup_view(request):
             return JsonResponse({'error': 'Email already in use'}, status=400)
 
         user = User.objects.create_user(
-            username=email,  # Using email as username
+            email=email, # Using email as username
+            password=password ,
             first_name=first_name,
             last_name=last_name,
-            email=email,
-            password=password
+            username=email,
+            
         )
         user.save()
         return JsonResponse({'message': 'User registered successfully'})
@@ -62,6 +125,7 @@ def login_view(request):
             return JsonResponse({'error': 'User not found'}, status=404)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -108,18 +172,13 @@ def nearby_doctors(request):
         return JsonResponse({'error': 'Invalid location'}, status=400)
 
     user_coords = (location.latitude, location.longitude)
+    print(user_coords)
 
-    doctors = Doctor.objects.all()
-    nearby_doctors = []
+    # Ensure this returns a dictionary, not a JsonResponse
+    nearby_doctors_data = find_nearest_hospital(location.latitude, location.longitude)
+    print(nearby_doctors_data)
 
-    for doctor in doctors:
-        doctor_coords = (doctor.latitude, doctor.longitude)
-        distance = geodesic(user_coords, doctor_coords).kilometers
-        if distance <= 10:  # within 10 km
-            nearby_doctors.append({
-                'name': doctor.name,
-                'address': doctor.address,
-                'distance': distance
-            })
+    return JsonResponse(nearby_doctors_data, safe=False) 
 
-    return JsonResponse(nearby_doctors, safe=False)
+   
+

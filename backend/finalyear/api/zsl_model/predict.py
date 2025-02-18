@@ -1,49 +1,47 @@
-from transformers import pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
-# Expanded list of prompts with various symptom descriptions
-prompts = [
-    "The patient has a high fever and cough.",
-    "The patient is experiencing headaches and dizziness.",
-    "The patient has a runny nose and sore throat.",
-    "The patient has a rash and itchy skin.",
-    "The patient is feeling extremely tired and weak.",
-    "The patient has severe stomach pain and vomiting.",
-    "The patient has chest pain and difficulty breathing.",
-    "The patient is experiencing joint pain and swelling.",
-    "The patient has sudden weight loss and night sweats.",
-    "The patient has blurred vision and excessive thirst.",
-] * 10  # Duplicated to ensure 100 prompts
+# Load the model and tokenizer
 
-# Expanded list of possible diseases
-POSSIBLE_DISEASES = [
-    "Flu", "Cold", "Malaria", "Typhoid", "Diabetes", "Hypertension", "COVID-19", "Tuberculosis",
-    "Dengue", "Chikungunya", "Asthma", "Bronchitis", "Pneumonia", "Chickenpox", "Measles", "Mumps",
-    "Hepatitis A", "Hepatitis B", "Hepatitis C", "Hepatitis D", "Hepatitis E", "Zika Virus", "Ebola",
-    "Rabies", "Tetanus", "Leprosy", "Plague", "Anthrax", "Meningitis", "Encephalitis", "Celiac Disease",
-    "Crohn's Disease", "Ulcerative Colitis", "Gastritis", "GERD", "Peptic Ulcer", "Kidney Stones", "UTI",
-    "Liver Cirrhosis", "Fatty Liver", "Appendicitis", "Pancreatitis", "Anemia", "Leukemia", "Lymphoma",
-    "Thyroid Disorder", "Goiter", "Polio", "Parkinson's Disease", "Alzheimer's Disease", "Multiple Sclerosis",
-    "Epilepsy", "Migraine", "Stroke", "Heart Attack", "Congenital Heart Disease", "Arrhythmia", "Hemophilia",
-    "Sickle Cell Anemia", "Lupus", "Psoriasis", "Eczema", "Vitiligo", "Dermatitis", "Skin Cancer", "Breast Cancer",
-    "Lung Cancer", "Colon Cancer", "Prostate Cancer", "Ovarian Cancer", "Cervical Cancer", "Throat Cancer",
-    "Bone Cancer", "Liver Cancer", "Pancreatic Cancer", "Esophageal Cancer", "Gastric Cancer", "Kidney Cancer",
-    "Bladder Cancer", "Testicular Cancer", "Sarcoma", "Melanoma", "HIV/AIDS", "Syphilis", "Gonorrhea",
-    "Chlamydia", "Herpes", "Human Papillomavirus (HPV)", "Toxoplasmosis", "Candidiasis", "Cryptosporidiosis",
-    "Brucellosis", "Leptospirosis", "Q Fever", "Scrub Typhus", "Typhus Fever"
-]
+MODEL_PATH = "./DeepSeek-1.5B-Medical"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_PATH,
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
 
-classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+# Define the prompt structure
+prompt_style = """Below is an instruction that describes a task, paired with an input that provides further context.
+Write a response that appropriately completes the request.
+Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.
 
-def predict_disease(symptoms):
-    results = []
-    for prompt in prompts:
-        result = classifier(prompt, POSSIBLE_DISEASES)
-        results.append(result)
+### Instruction:
+You are a medical expert with advanced knowledge in clinical reasoning, diagnostics, and treatment planning.
+Please answer the following medical question.
 
-    combined_scores = {disease: 0 for disease in POSSIBLE_DISEASES}
-    for result in results:
-        for i, disease in enumerate(result["labels"]):
-            combined_scores[disease] += result["scores"][i]
+### Question:
+{}
 
-    predicted_disease = max(combined_scores, key=combined_scores.get)
-    return predicted_disease
+### Response:
+<think>{}"""
+
+def predict_disease(symptom: str) -> str:
+    """Generate a medical response based on the given symptom description."""
+    if not symptom:
+        return "Error: No symptoms provided."
+
+    # Tokenize input
+    inputs = tokenizer([prompt_style.format(symptom, "")], return_tensors="pt").to("cuda")
+
+    # Generate response
+    outputs = model.generate(
+        input_ids=inputs.input_ids,
+        attention_mask=inputs.attention_mask,
+        max_new_tokens=1200
+    )
+
+    # Decode and format response
+    response = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    formatted_resp = response[0].split("</think>")[-1]
+    return formatted_resp.strip()
