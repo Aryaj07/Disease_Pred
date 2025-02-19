@@ -1,23 +1,25 @@
 "use client";
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function DashboardPage() {
-  const [symptoms, setSymptoms] = useState('');
-  const [prediction, setPrediction] = useState('');
+  const [symptoms, setSymptoms] = useState("");
+  const [prediction, setPrediction] = useState("");
   const [loading, setLoading] = useState(false);
   const [doctors, setDoctors] = useState([]);
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState("");
   const router = useRouter();
 
   const handlePredict = async () => {
     setLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/predict/', { symptoms });
+      const response = await axios.post("http://127.0.0.1:8000/api/predict/", {
+        symptoms,
+      });
       setPrediction(response.data.prediction);
     } catch (err) {
-      console.error('Prediction Failed:', err.response.data);
+      console.error("Prediction Failed:", err);
     } finally {
       setLoading(false);
     }
@@ -25,10 +27,13 @@ export default function DashboardPage() {
 
   const fetchNearbyDoctors = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/nearby-doctors/?location=${location}`);
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/nearby-doctors/?location=${location}`
+      );
+      console.log(response.data);
       setDoctors(response.data);
     } catch (err) {
-      console.error('Fetching Doctors Failed:', err.response.data);
+      console.error("Fetching Doctors Failed:", err);
     }
   };
 
@@ -53,7 +58,7 @@ export default function DashboardPage() {
           value={symptoms}
           onChange={(e) => setSymptoms(e.target.value)}
           className="w-full h-32 p-4 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-4 focus:ring-green-400 resize-none transition-all duration-300 mb-2 text-gray-800"
-          style={{ minHeight: '8rem', maxHeight: '12rem' }}
+          style={{ minHeight: "8rem", maxHeight: "12rem" }}
         ></textarea>
 
         {/* Prediction Button */}
@@ -64,7 +69,7 @@ export default function DashboardPage() {
           {loading ? (
             <div className="loader border-t-4 border-green-500 rounded-full w-5 h-5 mx-auto animate-spin"></div>
           ) : (
-            'Predict'
+            "Predict"
           )}
         </button>
 
@@ -92,13 +97,17 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Nearby Doctors Display */}
         {doctors.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Nearby Doctors</h2>
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+              Nearby Doctors
+            </h2>
             <ul className="list-disc list-inside">
               {doctors.map((doctor, index) => (
-                <li key={index} className="mb-2">
+                <li
+                  key={index}
+                  className="mb-2"
+                >
                   {doctor.name} - {doctor.address}
                 </li>
               ))}
