@@ -1,35 +1,41 @@
 "use client";
 import { useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import { FcGoogle } from "react-icons/fc"; // Google icon
+import { signIn } from "next-auth/react";
+import DashboardPage from "../dashboard/page";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await response.json();
-        if (response.status === 200) {
-            console.log("Login Successful:", data);
-            router.push("/dashboard");
-        } else {
-            console.error("Login Failed:", data.error);
-            alert(data.error);
-        }
+      const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.status === 200) {
+        console.log("Login Successful:", data);
+        router.push("/dashboard");
+      } else {
+        console.error("Login Failed:", data.error);
+        alert(data.error);
+      }
     } catch (err) {
-        console.error("Login Failed:", err);
+      console.error("Login Failed:", err);
     }
-};
+  };
+  const socialAction = async () => {
+    signIn("google", { callbackUrl: "/dashboard" });
+  };
+  
   return (
     <div
       className="flex items-center justify-center h-screen relative overflow-hidden bg-cover bg-center"
@@ -70,25 +76,33 @@ export default function Login() {
             className="w-full px-4 py-2 text-gray-800 bg-gray-100 border border-gray-300 rounded focus:outline-none focus:ring-4 focus:ring-blue-400 focus:scale-105 transition-transform duration-300 shadow-sm"
           />
         </div>
-        <div className="flex justify-between">
-          <button
-            type="submit"
-            className="w-[48%] py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-          >
-            Login
-          </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between">
+            <button
+              type="submit"
+              className="w-[48%] py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/signup")}
+              className="w-[48%] py-2 text-white bg-gray-500 rounded hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Google Auth Button */}
           <button
             type="button"
-            onClick={() => router.push("/signup")}
-            className="w-[48%] py-2 text-white bg-gray-500 rounded hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+            onClick={socialAction}
+            className="flex items-center justify-center gap-2 w-full py-2 text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-transform transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
           >
-            Sign Up
+            <FcGoogle size={20} />
+            Sign in with Google
           </button>
         </div>
-        {/* Subtle text animation for "Forgot Password" */}
-        <p className="mt-4 text-sm text-gray-500 text-center hover:text-blue-600 transition-colors duration-300 cursor-pointer animate-fade-in">
-          Forgot Password?
-        </p>
       </form>
     </div>
   );

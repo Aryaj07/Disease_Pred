@@ -1,46 +1,25 @@
 "use client";
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
   const [prediction, setPrediction] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pdfFile, setPdfFile] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [location, setLocation] = useState('');
+  const router = useRouter();
 
   const handlePredict = async () => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const response = await axios.post('http://127.0.0.1:8000/api/predict/', { symptoms });
       setPrediction(response.data.prediction);
     } catch (err) {
       console.error('Prediction Failed:', err.response.data);
     } finally {
-      setLoading(false); // Stop loading
-    }
-  };
-
-  const handlePdfUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      setLoading(true); // Start loading
-      const response = await axios.post('http://127.0.0.1:8000/api/upload-pdf/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      setPrediction(response.data.predicted_disease);
-    } catch (err) {
-      console.error('PDF Upload Failed:', err.response.data);
-    } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -53,21 +32,22 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-100 to-gray-200 flex items-center justify-center p-4 relative">
-      {/* Moving Gradient Background */}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-green-100 to-gray-200 animate-gradient-slide"
-      ></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-green-100 to-gray-200 animate-gradient-slide"></div>
       <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg relative z-10 transition-shadow duration-300 hover:shadow-3xl">
-        {/* Title */}
-        <h1 className="text-3xl font-semibold text-gray-700 mb-4 flex items-center justify-center">
-          <span role="img" aria-label="health">
-            ⚕️
-          </span>{" "}
-          Health Dashboard
+        {/* Header */}
+        <h1 className="text-3xl font-semibold text-gray-700 mb-4 text-center">
+          ⚕️ Health Dashboard
         </h1>
-        {/* Textarea with animated focus */}
+
+        {/* Textarea for Symptoms */}
         <textarea
           placeholder="Enter your symptoms..."
           value={symptoms}
@@ -75,20 +55,11 @@ export default function DashboardPage() {
           className="w-full h-32 p-4 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-4 focus:ring-green-400 resize-none transition-all duration-300 mb-2 text-gray-800"
           style={{ minHeight: '8rem', maxHeight: '12rem' }}
         ></textarea>
-        {/* Progress Indicator */}
-        <div className="relative h-2 w-full bg-gray-200 rounded overflow-hidden mb-2">
-          <div
-            className="h-full bg-green-400"
-            style={{ width: `${Math.min(symptoms.length, 100)}%` }}
-          ></div>
-        </div>
-        <p className="text-right text-sm text-gray-500 mb-4">
-          {symptoms.length} characters
-        </p>
-        {/* Button with loading animation */}
+
+        {/* Prediction Button */}
         <button
           onClick={handlePredict}
-          className="w-full py-2 text-white bg-green-400 rounded shadow-md hover:bg-green-500 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-offset-2 transition-transform transform hover:scale-105 active:scale-95"
+          className="w-full py-2 text-white bg-green-400 rounded shadow-md hover:bg-green-500 focus:outline-none focus:ring-4 focus:ring-green-300 transition-transform transform hover:scale-105 active:scale-95 mt-2"
         >
           {loading ? (
             <div className="loader border-t-4 border-green-500 rounded-full w-5 h-5 mx-auto animate-spin"></div>
@@ -96,16 +67,8 @@ export default function DashboardPage() {
             'Predict'
           )}
         </button>
-        {/* PDF Upload Button */}
-        <div className="mt-4">
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handlePdfUpload}
-            className="w-full p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-4 focus:ring-green-400 transition-all duration-300"
-          />
-        </div>
-        {/* Location Input for Nearby Doctors */}
+
+        {/* Location Input for Doctors */}
         <div className="mt-4">
           <input
             type="text"
@@ -116,19 +79,19 @@ export default function DashboardPage() {
           />
           <button
             onClick={fetchNearbyDoctors}
-            className="w-full py-2 text-white bg-green-400 rounded shadow-md hover:bg-green-500 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-offset-2 transition-transform transform hover:scale-105 active:scale-95 mt-2"
+            className="w-full py-2 text-white bg-green-400 rounded shadow-md hover:bg-green-500 focus:outline-none focus:ring-4 focus:ring-green-300 transition-transform transform hover:scale-105 active:scale-95 mt-2"
           >
             Find Nearby Doctors
           </button>
         </div>
+
         {/* Prediction Display */}
         {prediction && (
-          <div
-            className="mt-6 p-4 bg-green-50 border border-green-300 rounded text-green-700 shadow-lg transform transition-transform duration-500 hover:scale-105 animate-fade-in"
-          >
+          <div className="mt-6 p-4 bg-green-50 border border-green-300 rounded text-green-700 shadow-lg transform transition-transform duration-500 hover:scale-105 animate-fade-in">
             <strong>Prediction:</strong> {prediction}
           </div>
         )}
+
         {/* Nearby Doctors Display */}
         {doctors.length > 0 && (
           <div className="mt-6">
@@ -142,10 +105,14 @@ export default function DashboardPage() {
             </ul>
           </div>
         )}
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Powered by AI Health Predictor
-        </p>
+
+        {/* Logout Button at Bottom */}
+        <button
+          onClick={handleLogout}
+          className="w-full py-2 text-white bg-red-500 rounded shadow-md hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 transition-transform transform hover:scale-105 active:scale-95 mt-6"
+        >
+          Logout
+        </button>
       </div>
     </div>
   );

@@ -73,6 +73,7 @@ def find_nearest_hospital(latitude, longitude, radius=5000):
         }
     else:
         return {"message": "No hospitals or clinics found."}
+
     
 
 @csrf_exempt
@@ -179,6 +180,7 @@ def nearby_doctors(request):
     print(nearby_doctors_data)
 
     return JsonResponse(nearby_doctors_data, safe=False) 
+    return JsonResponse({"message": "No hospitals or clinics found."})
 
    
 
