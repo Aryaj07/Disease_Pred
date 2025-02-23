@@ -1,15 +1,26 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+import torch_directml  # Import DirectML for AMD GPUs
+import gc
 
-# Load the model and tokenizer
+# Clear unused memory
+gc.collect()
+torch.cuda.empty_cache()
 
-MODEL_PATH = "./DeepSeek-1.5B-Medical"
+# Use DirectML for AMD GPU
+device = torch_directml.device()
+
+# Define the local path where the model is stored
+MODEL_PATH = "./DeepSeek-1.5B-Medical"  # Adjust based on your local path
+
+# Load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+
+# Load the model with float16 precision (Reduces VRAM usage)
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
-    torch_dtype=torch.float16,
-    device_map="auto"
-)
+    torch_dtype=torch.float16,  # Use float16 for lower memory usage
+).to(device)  # Move model to AMD GPU
 
 # Define the prompt structure
 prompt_style = """Below is an instruction that describes a task, paired with an input that provides further context.
@@ -31,8 +42,8 @@ def predict_disease(symptom: str) -> str:
     if not symptom:
         return "Error: No symptoms provided."
 
-    # Tokenize input
-    inputs = tokenizer([prompt_style.format(symptom, "")], return_tensors="pt").to("cuda")
+    # Tokenize input and move to AMD GPU
+    inputs = tokenizer([prompt_style.format(symptom, "")], return_tensors="pt").to(device)
 
     # Generate response
     outputs = model.generate(
