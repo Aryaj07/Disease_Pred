@@ -1,3 +1,8 @@
+# Ignore models
+DeepSeek-1.5B-Medical/
+DeepSeek-7B-Medical/
+Meta-3B-Medical/
+
 # Ignoring temp folders and database files
 temp_data-*
 db.sqlite3
@@ -9,7 +14,7 @@ hacker
 *.log
 *.pot
 *.pyc
-finalyear/__pycache__
+__pycache__
 
 # Ignore media and credential files
 media
