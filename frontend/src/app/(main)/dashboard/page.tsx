@@ -8,8 +8,6 @@ interface Message {
   content: string;
 }
 
-// Rishit ka penis small
-
 export default function DashboardPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
