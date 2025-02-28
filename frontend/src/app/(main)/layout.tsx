@@ -1,4 +1,4 @@
-import Navbar from '@/components/Navbar';
+// import Navbar from '@/components/Navbar';
 import React from 'react'
 
 interface MainLayoutProps {
@@ -8,7 +8,7 @@ interface MainLayoutProps {
 export default function MainLayout({children}:MainLayoutProps){
     return(
         <div className='flex flex-col w-full h-screen'>
-            <Navbar />
+            {/* <Navbar /> */}
             {children}
         </div>
     )

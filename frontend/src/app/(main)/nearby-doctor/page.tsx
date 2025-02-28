@@ -27,14 +27,14 @@ export default function NearbyDoctorsPage() {
         }
       });
   
-      const hospitalsData = response.data.hospitals || [];
-  
+      const hospitalsData = (response.data.hospitals as doctor[]) || [];
+      
       const sortedHospitals = hospitalsData
-        .map((item: any) => ({
+        .map((item: doctor): doctor => ({
           ...item,
           distance_meters: Number(item.distance_meters)
         }))
-        .sort((a: any, b: any) => a.distance_meters - b.distance_meters);
+        .sort((a: doctor, b: doctor) => a.distance_meters - b.distance_meters);
 
       setDoctors(sortedHospitals);
       setError("");
@@ -64,7 +64,7 @@ export default function NearbyDoctorsPage() {
         setLocation(locationStr);
         fetchNearbyDoctors(locationStr);
       },
-      (error) => {
+      () => {
         setError("Unable to retrieve your location. Please enter manually.");
       }
     );

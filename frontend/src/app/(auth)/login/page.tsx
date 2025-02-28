@@ -1,9 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FcGoogle } from "react-icons/fc"; // Google icon
+import { FcGoogle } from "react-icons/fc";
 import { signIn } from "next-auth/react";
-import DashboardPage from "../dashboard/page";
 
 export default function Login() {
   const [email, setEmail] = useState("");

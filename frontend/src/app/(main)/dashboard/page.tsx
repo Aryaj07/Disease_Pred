@@ -54,7 +54,7 @@ export default function DashboardPage() {
           content: `Based on your symptoms, the predicted condition is:\n\n**${response.data.predicted_disease}**\n\nPlease consult a healthcare professional for accurate diagnosis.`
         }
       ]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [
         ...prev,
         {
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         <div className="flex justify-center">
           <div className="max-w-3xl w-full text-center p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
             <p className="text-gray-600 dark:text-blue-200">
-              Welcome! Describe your symptoms and I'll help predict possible conditions.
+              Welcome! Describe your symptoms and I will help predict possible conditions.
               <br />
               <span className="text-sm text-gray-500 dark:text-blue-300">
                 Note: This is not a substitute for professional medical advice.
@@ -150,7 +150,7 @@ export default function DashboardPage() {
           <div className="flex justify-start">
             <div className="max-w-3xl p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-lg">
               <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-                <div className="animate-pulse"><i>thinking...</i></div>
+                <div className="animate-pulse"><i>Thinking...</i></div>
               </div>
             </div>
           </div>

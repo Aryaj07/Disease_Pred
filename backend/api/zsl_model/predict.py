@@ -54,5 +54,14 @@ def predict_disease(symptom: str) -> str:
 
     # Decode and format response
     response = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-    formatted_resp = response[0].split("</think>")[-1]
+    formatted_resp = clean_response(response)
+    return formatted_resp
+
+def clean_response(response):
+    triggers = ["</think>", "<think>", "### Response:"]
+    formatted_resp = response[0]
+    for trigger in triggers:
+        if trigger in formatted_resp:
+            formatted_resp = formatted_resp.split(trigger)[-1]
+            break
     return formatted_resp.strip()
