@@ -10,15 +10,16 @@ from .models import User, Doctor
 from .serializers import UserSerializer
 from .zsl_model.predict import predict_disease
 from django.core.files.storage import default_storage
-import fitz  # PyMuPDF
+import fitz
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 import requests
 import urllib.parse
 
-def find_nearest_hospital(latitude, longitude, radius=5000):
-    """Fetches the nearest hospital and generates a Google Maps link."""
-    
+
+
+def find_nearest_hospital(latitude, longitude, num_results, radius=5000):
+    """Fetches the nearest num_results hospitals/clinics and generates Google Maps links."""
     overpass_url = "http://overpass-api.de/api/interpreter"
     overpass_query = f"""
     [out:json];
@@ -31,48 +32,42 @@ def find_nearest_hospital(latitude, longitude, radius=5000):
     );
     out center;
     """
-    
     response = requests.get(overpass_url, params={'data': overpass_query})
-    
     if response.status_code != 200:
         return {"error": "Failed to fetch data from OpenStreetMap API."}
-
     data = response.json()
-    
     if 'elements' not in data or not data['elements']:
         return {"message": "No hospitals or clinics found within the radius."}
-
-    nearest = None
-    min_distance = float('inf')
-    
+    facilities = []
     for element in data['elements']:
         if 'lat' in element and 'lon' in element:
-            facility_location = (element['lat'], element['lon'])
-            distance = geodesic((latitude, longitude), facility_location).meters
-            if distance < min_distance:
-                min_distance = distance
-                nearest = element
-
-    if nearest:
-        name = nearest.get('tags', {}).get('name', 'Unknown Medical Facility')
-        hospital_lat = nearest['lat']
-        hospital_lon = nearest['lon']
-        
-        # Encode the hospital name for URL formatting
+            facility_lat = element['lat']
+            facility_lon = element['lon']
+        elif 'center' in element:
+            facility_lat = element['center']['lat']
+            facility_lon = element['center']['lon']
+        else:
+            continue
+        name = element.get('tags', {}).get('name')
+        if not name or name == "Unknown Medical Facility":
+            continue
+        distance = geodesic((latitude, longitude), (facility_lat, facility_lon)).meters
         encoded_name = urllib.parse.quote(name)
-
-        # Google Maps link with hospital name
-        google_maps_link = f"https://www.google.com/maps/search/?api=1&query={encoded_name}+{hospital_lat},{hospital_lon}"
+        google_maps_link = f"https://www.google.com/maps/search/?api=1&query={encoded_name}+{facility_lat},{facility_lon}"
         
-        return {
+        facilities.append({
             "name": name,
-            "latitude": hospital_lat,
-            "longitude": hospital_lon,
-            "distance_meters": round(min_distance, 2),
+            "latitude": facility_lat,
+            "longitude": facility_lon,
+            "distance_meters": round(distance, 2),
             "google_maps_link": google_maps_link
-        }
-    else:
+        })
+    facilities.sort(key=lambda x: x["distance_meters"])
+    if len(facilities) == 0:
         return {"message": "No hospitals or clinics found."}
+    else:
+        return {"hospitals": facilities[:num_results]}
+
 
     
 
@@ -118,7 +113,6 @@ def login_view(request):
         try:
             user = User.objects.get(email=email)
             if user.check_password(password):
-                # Authentication successful
                 return JsonResponse({'message': 'Login successful'})
             else:
                 return JsonResponse({'error': 'Invalid credentials'}, status=401)
@@ -164,23 +158,20 @@ class PDFUploadView(APIView):
 @permission_classes([AllowAny])
 def nearby_doctors(request):
     user_location = request.GET.get('location')
+    num_results = int(request.GET.get('num', 5))
     if not user_location:
         return JsonResponse({'error': 'Location is required'}, status=400)
-
+    
     geolocator = Nominatim(user_agent="health_monitoring")
     location = geolocator.geocode(user_location)
     if not location:
-        return JsonResponse({'error': 'Invalid location'}, status=400)
+        error_message = f"Invalid location: '{user_location}'. Please provide a valid location."
+        return JsonResponse({'error': error_message}, status=400)
 
-    user_coords = (location.latitude, location.longitude)
-    print(user_coords)
+    nearby_doctors_data = find_nearest_hospital(location.latitude, location.longitude, num_results)
 
-    # Ensure this returns a dictionary, not a JsonResponse
-    nearby_doctors_data = find_nearest_hospital(location.latitude, location.longitude)
-    print(nearby_doctors_data)
+    return JsonResponse(nearby_doctors_data, safe=False)
 
-    return JsonResponse(nearby_doctors_data, safe=False) 
-    return JsonResponse({"message": "No hospitals or clinics found."})
 
    
 

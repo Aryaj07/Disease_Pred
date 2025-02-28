@@ -9,6 +9,7 @@ export default function NearbyDoctorsPage() {
   const [location, setLocation] = useState("");
   const [doctors, setDoctors] = useState<doctor[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const fetchNearbyDoctors = async (providedLocation?: string) => {
     const loc = providedLocation || location;
@@ -16,27 +17,37 @@ export default function NearbyDoctorsPage() {
       setError("Please enter a location or use your current location");
       return;
     }
-
+    setLoading(true)
     try {
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/nearby-doctors/?location=${loc}`
-      );
-      
-      const doctorsData = Array.isArray(response.data) ? response.data : [response.data];
-      
-      const sortedDoctors = doctorsData
-        .map(doctor => ({
-          ...doctor,
-          distance_meters: Number(doctor.distance_meters)
+      const numResults = 6;
+      const response = await axios.get(`http://127.0.0.1:8000/api/nearby-doctors/`, {
+        params: {
+          location: loc,
+          num: numResults
+        }
+      });
+  
+      const hospitalsData = response.data.hospitals || [];
+  
+      const sortedHospitals = hospitalsData
+        .map((item: any) => ({
+          ...item,
+          distance_meters: Number(item.distance_meters)
         }))
-        .sort((a, b) => a.distance_meters - b.distance_meters);
+        .sort((a: any, b: any) => a.distance_meters - b.distance_meters);
 
-      setDoctors(sortedDoctors);
+      setDoctors(sortedHospitals);
       setError("");
     } catch (err) {
       console.error("Fetching Doctors Failed:", err);
-      setError("Failed to fetch doctors. Please try again.");
+      if (axios.isAxiosError(err) && err.response?.status == 400) {
+        setError("");
+      } else {
+        setError("Failed to fetch doctors. Please try again.");
+      }
       setDoctors([]);
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -197,7 +208,8 @@ export default function NearbyDoctorsPage() {
           ) : (
             <div className="mt-8 p-6 bg-white/20 backdrop-blur-sm rounded-xl border-2 border-dashed border-white/30 text-center">
               <p className="text-xl text-white/80">
-                {location 
+                { loading ? "Loading...🌐"
+                  : location 
                   ? "No doctors found in this area 🌐"
                   : "Enter location to begin search 🔍"}
               </p>
