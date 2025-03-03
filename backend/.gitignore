@@ -1,7 +1,7 @@
 # Ignore models
 DeepSeek-1.5B-Medical/
 DeepSeek-7B-Medical/
-Meta-3B-Medical/
+Meta-3B-Medicalful/
 
 # Ignoring temp folders and database files
 temp_data-*

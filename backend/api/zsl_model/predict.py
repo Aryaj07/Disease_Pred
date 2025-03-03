@@ -11,7 +11,7 @@ torch.cuda.empty_cache()
 device = torch_directml.device()
 
 # Define the local path where the model is stored
-MODEL_PATH = "./Meta-3B-Medical"  # Adjust based on your local path
+MODEL_PATH = "./Meta-3B-Medicalful"  # Adjust based on your local path
 
 # Load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)

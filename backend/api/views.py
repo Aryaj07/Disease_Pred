@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import User, Doctor
@@ -15,6 +15,9 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 import requests
 import urllib.parse
+from .models import ChatMessage
+from django.contrib.auth.decorators import login_required
+import logging
 
 
 
@@ -175,3 +178,114 @@ def nearby_doctors(request):
 
    
 
+### ✅ Save Chat Message ###
+# @api_view(["POST"])
+# @csrf_exempt
+# def save_message(request):
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body)
+#             user_id = data.get("user_id")  # Get user ID from request
+#             # user_id = 1
+
+#             if not user_id:
+#                 return JsonResponse({"error": "User ID is required"}, status=400)
+
+#             user = User.objects.get(id=user_id)
+#             messages = data.get("messages", [])
+
+#             for msg in messages:
+#                 ChatMessage.objects.create(
+#                     user=user,
+#                     role=msg["role"],
+#                     content=msg["content"]
+#                 )
+
+#             return JsonResponse({"success": True})
+
+#         except User.DoesNotExist:
+#             return JsonResponse({"error": "User not found"}, status=404)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=500)
+
+#     return JsonResponse({"error": "Invalid request method"}, status=400)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+
+@api_view(["POST"])
+@csrf_exempt
+def save_message(request):
+    if request.method == "POST":
+        try:
+            logging.debug("Request received.")
+
+            # Read request body
+            raw_data = request.body.decode("utf-8")
+            logging.debug(f"Raw request body: {raw_data}")
+
+            # Parse JSON
+            data = json.loads(raw_data)
+            logging.debug(f"Parsed JSON data: {data}")
+
+            # Extract user_id
+            user_id = data.get("user_id")
+            logging.debug(f"Extracted user_id: {user_id}")
+
+            if not user_id:
+                return JsonResponse({"error": "User ID is required"}, status=400)
+
+            # Fetch user from database
+            user = User.objects.get(id=user_id)
+            logging.debug(f"User found: {user}")
+
+            messages = data.get("messages", [])
+            logging.debug(f"Received messages: {messages}")
+
+            # Save messages to the database
+            for msg in messages:
+                ChatMessage.objects.create(
+                    user=user,
+                    role=msg["role"],
+                    content=msg["content"]
+                )
+
+            return JsonResponse({"success": True})
+
+        except User.DoesNotExist:
+            logging.error(f"User with ID {user_id} not found.")
+            return JsonResponse({"error": "User not found"}, status=404)
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON Decode Error: {e}")
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+
+@api_view(["POST"])
+@csrf_exempt
+def get_chat_history(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            user_id = 1  # Get user ID from request
+
+            if not user_id:
+                return JsonResponse({"error": "User ID is required"}, status=400)
+
+            user = User.objects.get(id=user_id)
+            messages = ChatMessage.objects.filter(user=user).order_by("timestamp")
+
+            history = [{"role": msg.role, "content": msg.content} for msg in messages]
+            return JsonResponse({"messages": history})
+
+        except User.DoesNotExist:
+            return JsonResponse({"error": "User not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)

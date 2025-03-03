@@ -31,6 +31,7 @@ export default function Login() {
       console.error("Login Failed:", err);
     }
   };
+  
   const socialAction = async () => {
     signIn("google", { callbackUrl: "/dashboard" });
   };

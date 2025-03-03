@@ -16,13 +16,43 @@ export default function DashboardPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const API_BASE_URL = "http://127.0.0.1:8000/api";
+  const [token, setToken] = useState<string | null>(null);
+
+  // ✅ Ensure localStorage is accessed client-side only
+  useEffect(() => {
+    const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!storedToken) {
+      router.push("/dashboard");
+    } else {
+      setToken(storedToken);
+    }
+  }, [router]);
+
+  // ✅ Fetch chat history when token is set
+  useEffect(() => {
+    if (token) fetchChatHistory();
+  }, [token]);
+
+  // ✅ Apply dark mode theme dynamically
   useEffect(() => {
     if (darkMode) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
+
+  const fetchChatHistory = async () => {
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/get_chat_history/", {
+        user_id: 1,
+      });
+      setMessages(response.data.messages);
+    } catch (error) {
+      console.error("Failed to fetch chat history", error);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,11 +62,29 @@ export default function DashboardPage() {
     scrollToBottom();
   }, [messages]);
 
+
+
+  // ✅ Add a loading state for refresh button
+const [refreshing, setRefreshing] = useState(false);
+
+// ✅ Function to manually fetch chat history
+const handleRefreshChat = async () => {
+  setRefreshing(true);
+  try {
+    console.log("🔄 Refreshing chat history...");
+    await fetchChatHistory();
+  } finally {
+    setRefreshing(false);
+  }
+};
+
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputMessage.trim() || loading) return;
 
-    setMessages(prev => [...prev, { role: "user", content: inputMessage }]);
+    const newMessage: Message = { role: "user", content: inputMessage };
+    setMessages((prev) => [...prev, newMessage]);
     setInputMessage("");
     setLoading(true);
 
@@ -47,27 +95,38 @@ export default function DashboardPage() {
         { timeout: 180000 }
       );
 
-      setMessages(prev => [
-        ...prev,
+      const botResponse: Message = {
+        role: "assistant",
+        content: `Based on your symptoms, the predicted condition is:\n\n**${response.data.predicted_disease}**\n\nPlease consult a healthcare professional for accurate diagnosis.`,
+      };
+
+      setMessages((prev) => [...prev, botResponse]);
+
+      await axios.post(
+        "http://127.0.0.1:8000/api/save_message/",
         {
-          role: "assistant",
-          content: `Based on your symptoms, the predicted condition is:\n\n**${response.data.predicted_disease}**\n\nPlease consult a healthcare professional for accurate diagnosis.`
+          user_id: 1, // Dynamically fetch the logged-in user's ID
+          messages: [newMessage, botResponse]
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
         }
-      ]);
+      );
     } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "⚠️ Unable to process your request. Please try again later."
-        }
-      ]);
+      const errorResponse: Message = {
+        role: "assistant",
+        content: "⚠️ Unable to process your request. Please try again later.",
+      };
+      setMessages((prev) => [...prev, errorResponse]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     router.push("/login");
   };
 
@@ -75,36 +134,47 @@ export default function DashboardPage() {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
-        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">⚕️ Health Assistant</h1>
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+          ⚕️ Health Assistant
+        </h1>
         <div className="flex gap-4">
-        <div className='flex justify-center items-center ml-auto gap-x-4'>
           <button
-            onClick={() => window.location.href = "/dashboard"}
-            className="p-2 ml-auto text-white bg-blue-500 rounded shadow-md hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 active:scale-95"
+            onClick={() => router.push("/dashboard")}
+            className="p-2 text-white bg-blue-500 rounded shadow-md hover:bg-blue-600"
           >
             Dashboard
           </button>
           <button
             onClick={() => router.push("/nearby-doctor")}
-            className="p-2 ml-auto text-white bg-blue-500 rounded shadow-md hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 active:scale-95"
+            className="p-2 text-white bg-blue-500 rounded shadow-md hover:bg-blue-600"
           >
             Nearby Doctors
           </button>
-        </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            {darkMode ? '☀️' : '🌙'}
+            {darkMode ? "☀️" : "🌙"}
           </button>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg"
           >
             Logout
           </button>
         </div>
       </div>
+
+      {/* ✅ Refresh Chat Button */}
+    <div className="p-4 flex justify-center">
+      <button 
+        onClick={handleRefreshChat} 
+        className="px-4 py-2 text-sm font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50"
+        disabled={refreshing}
+      >
+        {refreshing ? "Refreshing..." : "🔄 Refresh Chat"}
+      </button>
+    </div>
 
       {/* Chat Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -121,12 +191,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Messages */}
+        {/* Messages (Including History) */}
         {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-3xl p-4 rounded-lg ${
                 message.role === "user"
@@ -134,9 +201,11 @@ export default function DashboardPage() {
                   : "bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm dark:text-gray-100"
               }`}
             >
-              {message.content.split("**").map((text, i) => 
+              {message.content.split("**").map((text, i) =>
                 i % 2 === 1 ? (
-                  <strong key={i} className="text-green-600 dark:text-green-300">{text}</strong>
+                  <strong key={i} className="text-green-600 dark:text-green-300">
+                    {text}
+                  </strong>
                 ) : (
                   <span key={i}>{text}</span>
                 )
@@ -150,7 +219,9 @@ export default function DashboardPage() {
           <div className="flex justify-start">
             <div className="max-w-3xl p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-lg">
               <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-                <div className="animate-pulse"><i>Thinking...</i></div>
+                <div className="animate-pulse">
+                  <i>Thinking...</i>
+                </div>
               </div>
             </div>
           </div>
@@ -167,12 +238,12 @@ export default function DashboardPage() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Describe your symptoms..."
-            className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+            className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-green-400 dark:bg-gray-700 dark:text-white"
             disabled={loading}
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors dark:bg-green-600 dark:hover:bg-green-700"
+            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             disabled={!inputMessage.trim() || loading}
           >
             {loading ? "Analyzing..." : "Send"}
